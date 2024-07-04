@@ -1,59 +1,142 @@
-﻿// See https://aka.ms/new-console-template for more information
-using System.ServiceModel;
+﻿using System.ServiceModel;
 
 Console.WriteLine("Hello, Gcu!");
 
 string userName = "1234"; // Format 1234 (API User, not your personal user)
-string password = "Top$ecret123!"; 
+string password = "Top$ecret123!";
 
-string messageIdentifier = Guid.NewGuid().ToString();
-string senderReference = Guid.NewGuid().ToString();
+await SendDamageProtocoll();
 
-try
+await GetRsds();
+
+/// Sends a "Schadwagen-Protokoll"
+async Task SendDamageProtocoll()
 {
-    BasicHttpBinding httpBinding = new();
-    httpBinding.Security.Mode = BasicHttpSecurityMode.Transport;
-    httpBinding.Security.Transport.ClientCredentialType = HttpClientCredentialType.Basic;
-    httpBinding.Security.Message.ClientCredentialType = BasicHttpMessageCredentialType.UserName;
-
-    MessageHeader msgHeader = new()
+    try
     {
-        MessageRoutingID = "1",
-        Sender = new Sender()
-        {
-            CI_InstanceNumber = "1", 
-            Value = userName // Sender = your username
-        },
-        Recipient = new Recipient()
-        {
-            CI_InstanceNumber = "1",
-            Value = "4000" // 4000 = GCU Broker 
-        },
-        MessageReference = new MessageReference()
-        {
-            MessageDateTime = DateTime.Now,
-            MessageIdentifier = messageIdentifier,
-            MessageType = "6004", // Unclear
-            MessageTypeVersion = "RSRDM0100" // Unclear
-        },
-        SenderReference = senderReference
-    };
-    
-    rsdsRequest request = new(msgHeader, new string[] { "378058406646", "378449605864", "378449609650", "378449609676", "218007311770" });
- 
-    EndpointAddress ea = new("https://prod.gcubroker.org/rsds"); // https://stage.gcubroker.org/rsds
+        string messageIdentifier = Guid.NewGuid().ToString();
+        string senderReference = Guid.NewGuid().ToString();
 
-    RsdsEndpointClient client = new(httpBinding, ea);
-    client.ClientCredentials.UserName.UserName = userName;
-    client.ClientCredentials.UserName.Password = password;
+        BasicHttpBinding httpBinding = new();
+        httpBinding.Security.Mode = BasicHttpSecurityMode.Transport;
+        httpBinding.Security.Transport.ClientCredentialType = HttpClientCredentialType.Basic;
+        httpBinding.Security.Message.ClientCredentialType = BasicHttpMessageCredentialType.UserName;
 
-    rsdsResponse response = await client.rsdsAsync(request);
+        GcuClient.Wdr.ServiceReference.MessageHeader msgHeader = new()
+        {
+            MessageRoutingID = "1",
+            Sender = new GcuClient.Wdr.ServiceReference.Sender()
+            {
+                CI_InstanceNumber = "1",
+                Value = userName // Sender = your username
+            },
+            Recipient = new GcuClient.Wdr.ServiceReference.Recipient()
+            {
+                CI_InstanceNumber = "1",
+                Value = "4000" // 4000 = GCU Broker 
+            },
+            MessageReference = new GcuClient.Wdr.ServiceReference.MessageReference()
+            {
+                MessageDateTime = DateTime.Now,
+                MessageIdentifier = messageIdentifier,
+                MessageType = "6004", // Unclear
+                MessageTypeVersion = "RSRDM0100" // Unclear
+            },
+            SenderReference = senderReference
+        };
 
-    /*
-     * Work with the resonse from here.
-     */    
+        GcuClient.Wdr.ServiceReference.WagonDamageReportMessageContactUserRU contactUserRU = new();
+        GcuClient.Wdr.ServiceReference.TransportInformation transportInfo = new();
+        GcuClient.Wdr.ServiceReference.DamageDetection damageDetection = new();
+        GcuClient.Wdr.ServiceReference.ExistingLabels existingLabels = new();
+        GcuClient.Wdr.ServiceReference.NewLabels newLabels = new();
+        GcuClient.Wdr.ServiceReference.DamageDescription damageDescription = new();
+        bool attachments = false;
+
+        GcuClient.Wdr.ServiceReference.wdrRequest request = new(msgHeader,
+                                                                "reportId",
+                                                                "UserRU",
+                                                                contactUserRU,
+                                                                "Keeper",
+                                                                "WagonNumberFreight",
+                                                                transportInfo,
+                                                                damageDetection,
+                                                                existingLabels,
+                                                                newLabels,
+                                                                damageDescription,
+                                                                attachments);
+
+        EndpointAddress ea = new("https://prod.gcubroker.org/wdr"); // https://stage.gcubroker.org/wdr
+
+        GcuClient.Wdr.ServiceReference.WdrEndpointClient client = new(httpBinding, ea);
+        client.ClientCredentials.UserName.UserName = userName;
+        client.ClientCredentials.UserName.Password = password;
+
+        GcuClient.Wdr.ServiceReference.wdrResponse response = await client.wdrAsync(request);
+
+        /*
+         * Work with the resonse from here.
+         */
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine(ex.Message);
+    }
 }
-catch (Exception ex)
+
+
+/// Gets RSDS² from GCU Broker
+async Task GetRsds()
 {
-    Console.WriteLine(ex.Message);
+    try
+    {
+        string messageIdentifier = Guid.NewGuid().ToString();
+        string senderReference = Guid.NewGuid().ToString();
+
+        BasicHttpBinding httpBinding = new();
+        httpBinding.Security.Mode = BasicHttpSecurityMode.Transport;
+        httpBinding.Security.Transport.ClientCredentialType = HttpClientCredentialType.Basic;
+        httpBinding.Security.Message.ClientCredentialType = BasicHttpMessageCredentialType.UserName;
+
+        GcuClient.Rsds.ServiceReference.MessageHeader msgHeader = new()
+        {
+            MessageRoutingID = "1",
+            Sender = new GcuClient.Rsds.ServiceReference.Sender()
+            {
+                CI_InstanceNumber = "1",
+                Value = userName // Sender = your username
+            },
+            Recipient = new GcuClient.Rsds.ServiceReference.Recipient()
+            {
+                CI_InstanceNumber = "1",
+                Value = "4000" // 4000 = GCU Broker 
+            },
+            MessageReference = new GcuClient.Rsds.ServiceReference.MessageReference()
+            {
+                MessageDateTime = DateTime.Now,
+                MessageIdentifier = messageIdentifier,
+                MessageType = "6004", // Unclear
+                MessageTypeVersion = "RSRDM0100" // Unclear
+            },
+            SenderReference = senderReference
+        };
+
+        GcuClient.Rsds.ServiceReference.rsdsRequest request = new(msgHeader, new string[] { "378058406646", "378449605864", "378449609650", "378449609676", "218007311770" });
+
+        EndpointAddress ea = new("https://prod.gcubroker.org/rsds"); // https://stage.gcubroker.org/rsds
+
+        GcuClient.Rsds.ServiceReference.RsdsEndpointClient client = new(httpBinding, ea);
+        client.ClientCredentials.UserName.UserName = userName;
+        client.ClientCredentials.UserName.Password = password;
+
+        GcuClient.Rsds.ServiceReference.rsdsResponse response = await client.rsdsAsync(request);
+
+        /*
+         * Work with the resonse from here.
+         */
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine(ex.Message);
+    }
 }

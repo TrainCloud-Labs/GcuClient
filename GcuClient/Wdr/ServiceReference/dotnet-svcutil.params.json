@@ -1,0 +1,12 @@
+{
+  "providerId": "Microsoft.Tools.ServiceModel.Svcutil",
+  "version": "2.2.0-preview1.23462.5",
+  "options": {
+    "inputs": [
+      "http://prod.gcubroker.org/wdr?wsdl"
+    ],
+    "outputFile": "Reference.cs",
+    "targetFramework": "net9.0",
+    "typeReuseMode": "All"
+  }
+}
